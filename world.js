@@ -37,6 +37,9 @@ class World {
         this.frameCounter = 0;
         this.growInterval = 100;
 
+        this.targetGrass = null; // 感知到的目标草
+
+
         // 添加能量属性
         this.energyGainFromGrass = 100;
         this.energyConsumptionForMovement = 10;
@@ -54,7 +57,7 @@ class World {
              this.updateEnergySettings();
          });
      }
-     
+     //更新能量设置
      updateEnergySettings() {
         this.energyGainFromGrass = parseFloat(this.energyGainInput.value);
         this.energyConsumptionForMovement = parseFloat(this.energyConsumptionInput.value);
@@ -91,62 +94,61 @@ class World {
     }
 
     CreateWorm(x, z, rotation, usingInstance) {
-        const that = this;
-
-        const name = "worm_" + that.wormIndex;
-        that.wormIndex++;
-
+        const name = "worm_" + this.wormIndex;
+        this.wormIndex++;
+    
         var wormMesh = null;
-
+    
         if (usingInstance) {
-            wormMesh = that.wormTemplate.createInstance(name);
+            wormMesh = this.wormTemplate.createInstance(name);
         } else {
-            wormMesh = that.wormTemplate.clone(name);
+            wormMesh = this.wormTemplate.clone(name);
         }
-
+    
         wormMesh.position.x = x;
-        wormMesh.position.y = that.groundY;
+        wormMesh.position.y = this.groundY;
         wormMesh.rotation.y = rotation;
         wormMesh.position.z = z;
         wormMesh.checkCollisions = false;
         wormMesh.isVisible = true;
-
+    
         if (!usingInstance) {
-            const material1 = new BABYLON.StandardMaterial("material1", scene);
+            const material1 = new BABYLON.StandardMaterial("material1", this.scene);
             material1.diffuseColor = new BABYLON.Color3(
                 Math.random(),
                 Math.random(),
                 Math.random()
             );
-
-            const material2 = new BABYLON.StandardMaterial("material2", scene);
+    
+            const material2 = new BABYLON.StandardMaterial("material2", this.scene);
             material2.diffuseColor = new BABYLON.Color3(
                 Math.random(),
                 Math.random(),
                 Math.random()
             );
-
-            const material_eye = new BABYLON.StandardMaterial("material_eye", scene);
+    
+            const material_eye = new BABYLON.StandardMaterial("material_eye", this.scene);
             material_eye.diffuseColor = new BABYLON.Color3(
                 Math.random(),
                 Math.random(),
                 Math.random()
             );
-
-            const multiMaterial = new BABYLON.MultiMaterial("multiMaterial", scene);
+    
+            const multiMaterial = new BABYLON.MultiMaterial("multiMaterial", this.scene);
             multiMaterial.subMaterials.push(material1);
             multiMaterial.subMaterials.push(material2);
             multiMaterial.subMaterials.push(material_eye);
-
+    
             wormMesh.material = multiMaterial;
         }
-
+    
         wormMesh.name = name;  // 设置 wormMesh 的名称
-        const worm = new Worm(wormMesh, this, this.initialWormEnergy);  // 传递初始能量
-        that.worms.push(worm);
+        const worm = new Worm(wormMesh, this, this.showBoundary, this.initialWormEnergy);  // 传递初始能量
+        this.worms.push(worm);
         this.registerClickHandler(wormMesh);  // 调用 registerClickHandler 方法注册点击事件
-         return worm;
+        return worm;
     }
+    
     registerClickHandler(wormMesh) {
         wormMesh.actionManager = new BABYLON.ActionManager(this.scene);
         wormMesh.actionManager.registerAction(new BABYLON.ExecuteCodeAction(
@@ -412,6 +414,7 @@ class World {
             worm.Move();
             worm.Eat();
             worm.Attack();
+            worm.Probe();
         });
 
         this._updateCountDisplay();

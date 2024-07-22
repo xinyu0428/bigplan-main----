@@ -14,10 +14,22 @@ class Worm {
 
     Move() {
         if (this.energy <= 0) {
-            return; // 如果能量不足，则停止移动
+            this.die(); // 如果能量不足，调用死亡方法
+            return; // 停止移动
         }
 
-        this.wormMesh.rotation.y += Math.random() * Math.PI / 4 - Math.PI / 8;
+        this.Probe(); // 在移动之前调用Probe方法来感知附近的草
+
+        if (this.targetGrass) {
+            // 计算虫子朝向草的方向
+            const direction = this.targetGrass.grassMesh.position.subtract(this.wormMesh.position);
+            this.wormMesh.rotation.y = Math.atan2(direction.z, direction.x);
+        } else {
+            this.wormMesh.rotation.y += Math.random() * Math.PI / 4 - Math.PI / 8;
+        }
+
+
+      //this.wormMesh.rotation.y += Math.random() * Math.PI / 4 - Math.PI / 8;
 
         const wormLen = 8;
         var speed = this.world.WormSpeed;
@@ -101,8 +113,9 @@ class Worm {
             }
         }
     }
+   
 
-    Attack() {
+ /*   Attack() {
         const collidedWorm = this._checkCollision(this.wormMesh.position);
         if (collidedWorm) {
             // 随机选择一只虫子死亡
@@ -115,9 +128,42 @@ class Worm {
                 this.world.worms.splice(index, 1);
             }
         }
+    }*/
+        Attack() {
+            const collidedWorm = this._checkCollision(this.wormMesh.position);
+            if (collidedWorm) {
+                // 随机选择一只虫子死亡
+                const wormToDie = Math.random() < 0.5 ? this : collidedWorm;
+    
+                // 删除死亡的虫子
+                wormToDie.die();
+            }
+        }
+ die() {
+        // 删除死亡的虫子
+        this.wormMesh.dispose();
+        const index = this.world.worms.indexOf(this);
+        if (index > -1) {
+            this.world.worms.splice(index, 1);
+        }
     }
-
     Think() {}
 
-    Probe() {}
+    Probe() {
+        const wormPosition = this.wormMesh.position;
+        let nearestGrass = null;
+        let minDistance = this.sensorRange;
+    
+        for (const grass of this.world.grasses) {
+            const distance = BABYLON.Vector3.Distance(wormPosition, grass.grassMesh.position);
+            if (distance < minDistance) {
+                nearestGrass = grass;
+                minDistance = distance;
+            }
+        }
+    
+        this.targetGrass = nearestGrass;
+    }
+    
+    
 }
